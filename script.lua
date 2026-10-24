@@ -1,105 +1,80 @@
 -- ==========================================
--- سكربت TROFY الخاص - Steal An Egg
+-- TROFY HUB | موزع السكربتات الذكي
 -- ==========================================
 
--- 1. تحميل مكتبة الواجهة Rayfield
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- نضع رسالة في الكونسول لتأكيد التشغيل
+print("TROFY HUB: جاري التعرف على اللعبة...")
 
--- 2. إنشاء الواجهة الرئيسية
-local Window = Rayfield:CreateWindow({
-   Name = "TROFY HUB | Steal An Egg",
-   LoadingTitle = "جاري تحميل سكربت TROFY...",
-   LoadingSubtitle = "الرجاء الانتظار",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "TROFY_Hub", 
-      FileName = "StealEggConfig"
-   },
-   KeySystem = false 
-})
+-- روابط السكربتات (يمكنك استبدالها بروابطك مستقبلاً)
+local SAE = "https://raw.githubusercontent.com/tienkhanh1/Chilli-Hub-Script/refs/heads/main/StealAnEggg"
+local RAP = "https://api.luarmor.net/files/v4/loaders/0dbcaa9e992477523d38a8284d7dbdef.lua"
+local JFA = "https://raw.githubusercontent.com/tienkhanh1/Chilli-Hub-Script/refs/heads/main/JumpForAnimals"
+local SAB = "https://raw.githubusercontent.com/tienkhanh1/spicy/refs/heads/main/Steal-a-Brainrot"
+local MM2 = "https://api.luarmor.net/files/v4/loaders/2bf348894416e1d3deee40be756d42ff.lua"
+local BROOK = "https://api.luarmor.net/files/v4/loaders/89190a03fd337349cef140d576357ba3.lua"
 
--- 3. تقسيم الواجهة إلى تبويبات (Tabs)
-local MainTab = Window:CreateTab("الرئيسية", 4483362458) -- أيقونة
-local PlayerTab = Window:CreateTab("اللاعب", 4483362458) 
+-- جدول التعرف على الألعاب عبر Game ID
+local byGameId = {
+    [10563114921] = SAE,     -- Steal An Egg
+    [10035204815] = RAP,     -- RAP
+    [10690360998] = JFA,     -- Jump For Animals
+    [7709344486] = SAB,      -- Steal a Brainrot
+    [66654135] = MM2,        -- Murder Mystery 2
+    [1686885941] = BROOK,    -- Brookhaven
+}
 
--- ==========================================
--- 4. إضافة الميزات (Features)
--- ==========================================
+-- جدول التعرف على الألعاب عبر Place ID
+local byPlaceId = {
+    [107778070777162] = SAE,
+    [124216119978534] = RAP,
+    [126870639873289] = JFA,
+    [109983668079237] = SAB,
+    [142823291] = MM2,
+    [4924922222] = BROOK,
+}
 
--- ميزة 1: السرقة التلقائية (كمثال تجريبي)
-local autoStealEnabled = false
-MainTab:CreateToggle({
-   Name = "السرقة التلقائية (Auto Steal)",
-   CurrentValue = false,
-   Flag = "AutoStealToggle",
-   Callback = function(Value)
-       autoStealEnabled = Value
-       -- هنا يتم وضع كود السرقة الفعلي للعبة
-       -- (يختلف حسب تغيرات اللعبة)
-       if autoStealEnabled then
-           print("تم تفعيل السرقة التلقائية")
-       end
-   end,
-})
+-- التحقق من الـ ID الخاص باللعبة
+local gameId = game.GameId
+while gameId == 0 and game.PlaceId == 0 do
+    task.wait()
+    gameId = game.GameId
+end
 
--- ميزة 2: سرعة اللاعب (WalkSpeed)
-PlayerTab:CreateSlider({
-   Name = "سرعة اللاعب (WalkSpeed)",
-   Range = {16, 200},
-   Increment = 1,
-   Suffix = "Speed",
-   CurrentValue = 16,
-   Flag = "SpeedSlider", 
-   Callback = function(Value)
-       if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-           game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
-       end
-   end,
-})
+-- اختيار السكربت المناسب
+local url = byGameId[gameId] or byPlaceId[game.PlaceId]
 
--- ميزة 3: الطيران (Fly) - مبسط
-local flyEnabled = false
-local flyConnection
+-- إذا كانت اللعبة غير مدعومة
+if not url then
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "TROFY HUB",
+        Text = "عذراً، هذه اللعبة غير مدعومة حالياً.",
+        Duration = 5
+    })
+    return
+end
 
-PlayerTab:CreateToggle({
-   Name = "تفعيل الطيران (Fly)",
-   CurrentValue = false,
-   Flag = "FlyToggle",
-   Callback = function(Value)
-       flyEnabled = Value
-       local player = game.Players.LocalPlayer
-       
-       if flyEnabled then
-           local char = player.Character or player.CharacterAdded:Wait()
-           local hrp = char:WaitForChild("HumanoidRootPart")
-           local bodyVelocity = Instance.new("BodyVelocity")
-           bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-           bodyVelocity.Velocity = Vector3.new(0,0,0)
-           bodyVelocity.Parent = hrp
-           
-           flyConnection = game:GetService("RunService").RenderStepped:Connect(function()
-               if not flyEnabled then return end
-               local camera = workspace.CurrentCamera
-               local moveDirection = camera.CFrame.LookVector * (game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) and 50 or 0)
-               bodyVelocity.Velocity = moveDirection + Vector3.new(0, (game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) and 50 or 0), 0)
-           end)
-       else
-           if flyConnection then flyConnection:Disconnect() end
-           local char = player.Character
-           if char and char:FindFirstChild("HumanoidRootPart") then
-               local bv = char.HumanoidRootPart:FindFirstChildOfClass("BodyVelocity")
-               if bv then bv:Destroy() end
-           end
-       end
-   end,
-})
+-- محاولة تحميل السكربت (3 محاولات)
+for i = 1, 3 do
+    local ok, source = pcall(game.HttpGet, game, url)
+    if ok and type(source) == "string" and source ~= "" then
+        local chunk = loadstring(source)
+        if chunk then
+            -- إشعار بنجاح التحميل
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "TROFY HUB",
+                Text = "تم التعرف على اللعبة بنجاح! جاري فتح السكربت...",
+                Duration = 5
+            })
+            chunk()
+        end
+        return
+    end
+    task.wait(0.5)
+end
 
--- ==========================================
--- 5. إشعار عند التحميل
--- ==========================================
-Rayfield:Notify({
-   Title = "TROFY HUB",
-   Content = "تم تحميل السكربت بنجاح!",
-   Duration = 5,
-   Image = 4483362458,
+-- إذا فشل التحميل
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "TROFY HUB",
+    Text = "فشل في تحميل السكربت، تحقق من اتصالك بالإنترنت.",
+    Duration = 5
 })
